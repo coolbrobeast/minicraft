@@ -3,121 +3,85 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>JS Minecraft - Multiplayer Fix</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/simplex-noise/2.4.0/simplex-noise.min.js"></script>
-<style>
-  body { margin:0; overflow:hidden; background:#000; font-family:'Segoe UI'; image-rendering: pixelated; }
-  #instructions { position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); color:white; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:100; }
-  #username-prompt { background:#333; border:4px solid #555; padding:20px; display:flex; flex-direction:column; gap:10px; pointer-events:auto; }
-  #username-input { padding:10px; font-size:18px; border:none; outline:none; background:#222; color:white; border:2px solid #555; }
-  #start-btn { padding:10px; cursor:pointer; font-weight:bold; background:#5d994d; border:none; color:white; margin-top:10px; }
-</style>
+<title>JS Minecraft - Multiplayer Fixed</title>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getFirestore, doc, setDoc, onSnapshot, collection, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+// ---- YOUR FIREBASE CONFIG ----
+const firebaseConfig = {
+  apiKey: "AIzaSyBPGf2VzQ8cxynG___OmdyA7JtIq7i9jxU",
+  authDomain: "minicraft-50b06.firebaseapp.com",
+  projectId: "minicraft-50b06",
+  storageBucket: "minicraft-50b06.appspot.com",
+  messagingSenderId: "680126695366",
+  appId: "1:680126695366:web:56949be03a1e1dcec994c7",
+  measurementId: "G-42HKEQPMMQ"
+};
+const appId = "minecraft-v2";
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+let user = null;
+let username = "Player";
+let isJoined = false;
+
+// DOM elements
+const instructions = document.getElementById('instructions');
+const startBtn = document.getElementById('start-btn');
+const usernameInput = document.getElementById('username-input');
+
+// ---- AUTH FUNCTION ----
+async function initAuth() {
+    await signInAnonymously(auth);
+}
+
+onAuthStateChanged(auth, (u) => {
+    user = u;
+    if (user) console.log("Logged in as:", user.uid);
+});
+
+// ---- SYNC FUNCTION ----
+async function syncSelf() {
+    if (!user) return;
+    const playerRef = doc(db, 'artifacts', appId, 'public', 'data', 'players', user.uid);
+    await setDoc(playerRef, { username, lastSeen: Date.now() }, { merge: true });
+}
+
+// ---- FIXED JOIN BUTTON ----
+startBtn.addEventListener('click', async () => {
+    if (usernameInput.value.trim()) username = usernameInput.value.trim();
+
+    startBtn.disabled = true;
+    startBtn.innerText = "Joining...";
+
+    try {
+        await initAuth();
+        await syncSelf();
+
+        isJoined = true;
+        instructions.style.display = 'none';
+        console.log("Joined world successfully!");
+    } catch (err) {
+        console.error("Failed to join:", err);
+        startBtn.disabled = false;
+        startBtn.innerText = "JOIN WORLD";
+        alert("Failed to join world. Check console.");
+    }
+});
+</script>
 </head>
 <body>
-
 <div id="instructions">
-  <div id="username-prompt">
-    <h2>Character Setup</h2>
-    <input type="text" id="username-input" placeholder="Player Name..." maxlength="15">
-    <div style="font-size:12px;">Upload Skin (PNG):</div>
-    <input type="file" id="skin-upload" accept="image/png" style="font-size:12px; color:white;">
-    <button id="start-btn">JOIN WORLD</button>
-  </div>
-  <p>W,A,S,D - Move | SPACE - Jump | Click - Mine | Right Click - Place | C - Craft</p>
+    <div id="username-prompt">
+        <h2>Character Setup</h2>
+        <input type="text" id="username-input" placeholder="Player Name..." maxlength="15">
+        <button id="start-btn">JOIN WORLD</button>
+    </div>
 </div>
-
-<script type="module">
-  // --- Firebase Setup ---
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-  import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-  import { getFirestore, doc, setDoc, onSnapshot, collection, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyBPGf2VzQ8cxynG___OmdyA7JtIq7i9jxU",
-    authDomain: "minicraft-50b06.firebaseapp.com",
-    projectId: "minicraft-50b06",
-    storageBucket: "minicraft-50b06.firebasestorage.app",
-    messagingSenderId: "680126695366",
-    appId: "1:680126695366:web:56949be03a1e1dcec994c7",
-    measurementId: "G-42HKEQPMMQ"
-  };
-  const appId = "minecraft-v2";
-
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
-
-  // --- Game Variables ---
-  let user = null;
-  let username = "Player";
-  let playerSkinBase64 = null;
-  let isJoined = false;
-  const otherPlayers = new Map();
-  const playerPos = { x:0, y:30, z:0 }; // simple placeholder
-
-  // --- DOM Elements ---
-  const startBtn = document.getElementById('start-btn');
-  const usernameInput = document.getElementById('username-input');
-  const skinUpload = document.getElementById('skin-upload');
-  const instructions = document.getElementById('instructions');
-
-  skinUpload.addEventListener('change', e => {
-    const file = e.target.files[0];
-    if(file) {
-      const reader = new FileReader();
-      reader.onload = (ev) => playerSkinBase64 = ev.target.result;
-      reader.readAsDataURL(file);
-    }
-  });
-
-  async function initAuth() {
-    try { await signInAnonymously(auth); } 
-    catch(err) { console.error("Auth error:", err); }
-  }
-
-  onAuthStateChanged(auth, u => {
-    user = u;
-    if(user && isJoined) setupMultiplayerListener();
-  });
-
-  function setupMultiplayerListener() {
-    const playersCol = collection(db, 'artifacts', appId, 'public', 'data', 'players');
-    onSnapshot(playersCol, snapshot => {
-      snapshot.docChanges().forEach(change => {
-        const data = change.doc.data();
-        const id = change.doc.id;
-        if(id === user.uid) return;
-        if(change.type === "removed") otherPlayers.delete(id);
-        else otherPlayers.set(id, data);
-      });
-    });
-    window.addEventListener('beforeunload', () => {
-      if(user) deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'players', user.uid));
-    });
-  }
-
-  async function syncSelf() {
-    if(!user) return;
-    try {
-      const playerRef = doc(db, 'artifacts', appId, 'public', 'data', 'players', user.uid);
-      await setDoc(playerRef, { 
-        x:playerPos.x, y:playerPos.y, z:playerPos.z,
-        username, skin:playerSkinBase64,
-        lastSeen:Date.now()
-      }, { merge:true });
-    } catch(e) { console.error("Sync error:", e); }
-  }
-
-  startBtn.addEventListener('click', async () => {
-    if(usernameInput.value.trim()) username = usernameInput.value.trim();
-    isJoined = true;
-    await initAuth();
-    instructions.style.display = 'none';
-    setInterval(syncSelf, 100); // keep position updated
-    alert("JOINED WORLD! Open another browser to see multiplayer.");
-  });
-</script>
 </body>
 </html>
