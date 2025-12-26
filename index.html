@@ -156,7 +156,19 @@
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot, collection, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+<script>
+  const __firebase_config = {
+    apiKey: "AIzaSyBPGf2VzQ8cxynG___OmdyA7JtIq7i9jxU",
+    authDomain: "minicraft-50b06.firebaseapp.com",
+    projectId: "minicraft-50b06",
+    storageBucket: "minicraft-50b06.firebasestorage.app",
+    messagingSenderId: "680126695366",
+    appId: "1:680126695366:web:56949be03a1e1dcec994c7",
+    measurementId: "G-42HKEQPMMQ"
+  };
+  const __app_id = "minecraft-v2"; // you can keep this as your game's ID
+</script>
+
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
@@ -689,3 +701,4 @@
     </script>
 </body>
 </html>
+
