@@ -755,16 +755,8 @@ function getMobileMovement() {
                 const dir = new THREE.Vector3(); camera.getWorldDirection(dir); dir.y = 0; dir.normalize();
                 const side = new THREE.Vector3().crossVectors(camera.up, dir).normalize();
                 const move = new THREE.Vector3();
-               let move = new THREE.Vector3();
-		if(keys['KeyW']) move.add(dir);
-		if(keys['KeyS']) move.sub(dir);
-		if(keys['KeyA']) move.add(side);
-		if(keys['KeyD']) move.sub(side);
-
-// Add mobile joystick movement
-		move.add(getMobileMovement());
-move.normalize().multiplyScalar(8 * delta);
-
+                if(keys['KeyW']) move.add(dir); if(keys['KeyS']) move.sub(dir);
+                if(keys['KeyA']) move.add(side); if(keys['KeyD']) move.sub(side);
                 move.normalize().multiplyScalar(8 * delta);
                 
                 const check = (pos) => {
