@@ -661,9 +661,6 @@ const firebaseConfig = {
         });
         window.addEventListener('keyup', e => keys[e.code] = false);
 
-
-
-
         const raycaster = new THREE.Raycaster();
         window.addEventListener('mousedown', e => {
             if(!controls.isLocked || isGameOver || !isJoined) return;
