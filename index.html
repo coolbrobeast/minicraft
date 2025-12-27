@@ -662,54 +662,6 @@ const firebaseConfig = {
         window.addEventListener('keyup', e => keys[e.code] = false);
 
 
-// Mobile Joystick
-const joystick = document.getElementById('mobile-controls');
-const knob = document.getElementById('joystick-knob');
-let joyStart = null;
-let joyDelta = { x: 0, y: 0 };
-
-const maxRadius = 50;
-
-knob.addEventListener('touchstart', e => { 
-    joyStart = { x: e.touches[0].clientX, y: e.touches[0].clientY }; 
-});
-knob.addEventListener('touchmove', e => {
-    if(!joyStart) return;
-    const dx = e.touches[0].clientX - joyStart.x;
-    const dy = e.touches[0].clientY - joyStart.y;
-    const dist = Math.min(Math.hypot(dx, dy), maxRadius);
-    const angle = Math.atan2(dy, dx);
-    joyDelta.x = Math.cos(angle) * dist / maxRadius;
-    joyDelta.y = Math.sin(angle) * dist / maxRadius;
-    knob.style.transform = `translate(${joyDelta.x * maxRadius}px, ${joyDelta.y * maxRadius}px)`;
-});
-knob.addEventListener('touchend', e => { joyStart = null; joyDelta = { x:0, y:0 }; knob.style.transform = 'translate(-50%, -50%)'; });
-
-// Mobile Actions
-document.getElementById('btn-jump').addEventListener('touchstart', e => keys['Space']=true);
-document.getElementById('btn-jump').addEventListener('touchend', e => keys['Space']=false);
-
-document.getElementById('btn-place').addEventListener('touchstart', e => keys['MouseRight']=true);
-document.getElementById('btn-place').addEventListener('touchend', e => keys['MouseRight']=false);
-
-document.getElementById('btn-mine').addEventListener('touchstart', e => keys['MouseLeft']=true);
-document.getElementById('btn-mine').addEventListener('touchend', e => keys['MouseLeft']=false);
-
-document.getElementById('btn-perspective').addEventListener('touchstart', e => updatePerspective());
-document.getElementById('btn-craft').addEventListener('touchstart', e => {
-    const cm = document.getElementById('crafting-menu');
-    cm.style.display = cm.style.display === 'block' ? 'none' : 'block';
-});
-
-// Apply joystick movement
-function getMobileMovement() {
-    const dir = new THREE.Vector3(); camera.getWorldDirection(dir); dir.y = 0; dir.normalize();
-    const side = new THREE.Vector3().crossVectors(camera.up, dir).normalize();
-    const move = new THREE.Vector3();
-    move.add(dir.clone().multiplyScalar(joyDelta.y * 8 * 0.016));
-    move.add(side.clone().multiplyScalar(joyDelta.x * 8 * 0.016));
-    return move;
-}
 
 
         const raycaster = new THREE.Raycaster();
